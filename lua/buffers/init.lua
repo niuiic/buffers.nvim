@@ -20,6 +20,10 @@ function M.open()
 	local prev_bufnr = vim.api.nvim_get_current_buf()
 
 	local buffers = M._get_buffers()
+	if #buffers == 0 then
+		vim.notify("no buffer opened", vim.log.levels.WARN)
+		return
+	end
 
 	local bufnr, winnr = M._create_window(buffers)
 
