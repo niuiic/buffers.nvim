@@ -12,12 +12,16 @@ end
 
 -- % open %
 function M.open()
+	if M._is_open() then
+		return
+	end
+
 	local prev_winnr = vim.api.nvim_get_current_win()
 	local prev_bufnr = vim.api.nvim_get_current_buf()
 
 	local buffers = M._get_buffers()
 
-	local bufnr, winnr = M._create_window()
+	local bufnr, winnr = M._create_window(buffers)
 
 	local get_buffers = function()
 		return buffers
@@ -95,18 +99,19 @@ function M._get_buffer_diagnostics(bufnr)
 end
 
 -- % create_window %
-function M._create_window()
+function M._create_window(buffers)
 	local bufnr = vim.api.nvim_create_buf(false, true)
-	local winnr = vim.api.nvim_open_win(bufnr, true, M._get_window_options(0.5, 0.5))
+	local winnr = vim.api.nvim_open_win(bufnr, true, M._get_window_options(M._config:get().window.width, #buffers))
+	vim.api.nvim_set_option_value("filetype", "buffers", { buf = bufnr })
+
 	return bufnr, winnr
 end
 
 -- % get_window_options %
-function M._get_window_options(width_ratio, height_ratio)
+function M._get_window_options(width, height)
 	local screen_w = vim.opt.columns:get()
-	local screen_h = vim.opt.lines:get() - vim.opt.cmdheight:get()
-	local window_w = screen_w * width_ratio
-	local window_h = screen_h * height_ratio
+	local window_w = width
+	local window_h = height
 	local window_w_int = math.floor(window_w)
 	local window_h_int = math.floor(window_h)
 	local center_x = (screen_w - window_w) / 2
@@ -233,7 +238,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, get_buffers, set_buffers)
 
 			M._close(bufnr, winnr)
 			vim.api.nvim_set_current_win(prev_winnr)
-			vim.api.nvim_set_current_buf(buffer.bufnr)
+			vim.api.nvim_win_set_buf(prev_winnr, buffer.bufnr)
 		end,
 	})
 
@@ -284,6 +289,13 @@ function M._focus_on_current_buffer(prev_bufnr, buffers, winnr)
 			vim.api.nvim_win_set_cursor(winnr, { lnum, 0 })
 		end
 	end
+end
+
+-- % is_open %
+function M._is_open()
+	return vim.iter(vim.api.nvim_list_bufs()):find(function(bufnr)
+		return vim.api.nvim_get_option_value("filetype", { buf = bufnr }) == "buffers"
+	end)
 end
 
 return M

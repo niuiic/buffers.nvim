@@ -29,6 +29,9 @@ local defaul_config = {
 		quit = "q",
 		enter = "<cr>",
 	},
+	window = {
+		width = 60,
+	},
 }
 
 return Config:new(defaul_config)
