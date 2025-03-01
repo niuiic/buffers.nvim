@@ -138,6 +138,11 @@ end
 function M._write_buffers(bufnr, buffers, prev_bufnr)
 	vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
 
+	local active_buffers = {}
+	vim.iter(vim.api.nvim_list_wins()):each(function(winnr)
+		active_buffers[vim.api.nvim_win_get_buf(winnr)] = true
+	end)
+
 	local function get_line(buffer, index)
 		local icon, color = require("nvim-web-devicons").get_icon_color_by_filetype(buffer.type)
 		icon = icon or ""
@@ -162,7 +167,7 @@ function M._write_buffers(bufnr, buffers, prev_bufnr)
 			"#FFFFFF",
 			color,
 			"#FFFFFF",
-			buffer.bufnr == prev_bufnr and "#00FF7F" or "#808080",
+			active_buffers[buffer.bufnr] and "#00FF7F" or "#808080",
 			"#FFFFFF",
 			"#FF0000",
 			"#FF8C00",
