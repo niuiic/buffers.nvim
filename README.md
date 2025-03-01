@@ -1,2 +1,3 @@
-# buffer.nvim
+# buffers.nvim
+
 Neovim buffer manager.
