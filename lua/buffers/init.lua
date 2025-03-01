@@ -167,7 +167,7 @@ function M._write_buffers(bufnr, buffers, prev_bufnr)
 			"#FFFFFF",
 			color,
 			"#FFFFFF",
-			active_buffers[buffer.bufnr] and "#00FF7F" or "#808080",
+			active_buffers[buffer.bufnr] and "#00FFFF" or "#808080",
 			"#FFFFFF",
 			"#FF0000",
 			"#FF8C00",
