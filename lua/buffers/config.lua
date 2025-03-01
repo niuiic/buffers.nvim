@@ -28,6 +28,7 @@ local defaul_config = {
 		close_buffer = "d",
 		quit = "q",
 		enter = "<cr>",
+		search = "<C-f>",
 	},
 	window = {
 		width = 60,

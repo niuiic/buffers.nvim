@@ -293,6 +293,28 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				:totable())
 		end,
 	})
+
+	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.search, "", {
+		callback = function()
+			local items = vim.iter(get_buffers())
+				:map(function(buffer)
+					return buffer.path
+				end)
+				:totable()
+			vim.ui.select(items, {}, function(choice)
+				if not choice then
+					return
+				end
+
+				local buffer = vim.iter(get_buffers()):find(function(b)
+					return b.path == choice
+				end)
+
+				vim.api.nvim_win_set_buf(prev_winnr, buffer.bufnr)
+				M._close(bufnr, winnr)
+			end)
+		end,
+	})
 end
 
 -- % get_selected_buffer %
