@@ -235,6 +235,9 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.enter, "", {
 		callback = function()
 			local buffer = M._get_selected_buffer(get_buffers())
+			if not buffer then
+				return
+			end
 
 			M._close(bufnr, winnr)
 			vim.api.nvim_set_current_win(prev_winnr)
