@@ -140,6 +140,8 @@ function M._write_buffers(bufnr, buffers, prev_bufnr)
 
 	local function get_line(buffer, index)
 		local icon, color = require("nvim-web-devicons").get_icon_color_by_filetype(buffer.type)
+		icon = icon or ""
+		color = color or "#0066FF"
 
 		local parts = {
 			buffer.modified and "⬤" or " ",
