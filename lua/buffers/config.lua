@@ -25,7 +25,7 @@ local defaul_config = {
 		return true
 	end,
 	keymap = {
-		close_buffer = "x",
+		close_buffer = "d",
 		quit = "q",
 		enter = "<cr>",
 	},
