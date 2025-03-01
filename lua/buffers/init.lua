@@ -247,14 +247,9 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 
 	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.close_buffer, "", {
 		callback = function()
-			if #get_buffers() == 1 then
-				vim.notify("can't close the last buffer", vim.log.levels.WARN)
-				return
-			end
-
 			local buffer = M._get_selected_buffer(get_buffers())
 
-			vim.api.nvim_buf_delete(buffer.bufnr, { force = true })
+			vim.api.nvim_buf_delete(buffer.bufnr, {})
 
 			vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
 			local cursor = vim.api.nvim_win_get_cursor(0)
@@ -268,7 +263,14 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				:totable())
 
 			if prev_bufnr == buffer.bufnr then
-				vim.api.nvim_win_set_buf(prev_winnr, get_buffers()[1].bufnr)
+				local fallback_buffer = get_buffers()[1]
+				if not fallback_buffer then
+					M._close(bufnr, winnr)
+				end
+				vim.api.nvim_win_set_buf(
+					prev_winnr,
+					fallback_buffer and fallback_buffer.bufnr or vim.api.nvim_create_buf(false, true)
+				)
 			end
 		end,
 	})
