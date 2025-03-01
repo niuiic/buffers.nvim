@@ -31,7 +31,7 @@ function M.open()
 		buffers = new_buffers
 	end
 
-	M._bind_keymap(bufnr, winnr, prev_winnr, get_buffers, set_buffers)
+	M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_buffers)
 
 	M._write_buffers(bufnr, buffers, prev_bufnr)
 
@@ -225,7 +225,7 @@ function M._highlight_buffers(highlights, bufnr)
 end
 
 -- % bind_keymap %
-function M._bind_keymap(bufnr, winnr, prev_winnr, get_buffers, set_buffers)
+function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_buffers)
 	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.quit, "", {
 		callback = function()
 			M._close(bufnr, winnr)
@@ -263,6 +263,10 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, get_buffers, set_buffers)
 					return b.bufnr ~= buffer.bufnr
 				end)
 				:totable())
+
+			if prev_bufnr == buffer.bufnr then
+				vim.api.nvim_win_set_buf(prev_winnr, get_buffers()[1].bufnr)
+			end
 		end,
 	})
 end
