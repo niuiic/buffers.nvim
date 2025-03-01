@@ -217,7 +217,11 @@ function M._highlight_buffers(highlights, bufnr)
 				M._hl_groups[color] = hl
 			end
 
-			vim.hl.range(bufnr, M._ns_id, hl, range.start, range.finish)
+			if vim.hl then
+				vim.hl.range(bufnr, M._ns_id, hl, range.start, range.finish)
+			else
+				vim.api.nvim_buf_add_highlight(bufnr, M._ns_id, hl, range.start[1], range.start[2], range.finish[2])
+			end
 
 			::continue::
 		end
