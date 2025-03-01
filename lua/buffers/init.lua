@@ -257,21 +257,16 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 		callback = function()
 			local buffer = M._get_selected_buffer(get_buffers())
 
-			vim.api.nvim_buf_delete(buffer.bufnr, {})
-
-			vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-			local cursor = vim.api.nvim_win_get_cursor(0)
-			vim.api.nvim_buf_set_lines(bufnr, cursor[1] - 1, cursor[1], false, {})
-			vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
-
-			set_buffers(vim.iter(get_buffers())
-				:filter(function(b)
-					return b.bufnr ~= buffer.bufnr
-				end)
-				:totable())
+			if buffer.modified then
+				vim.notify("buffer is modified but not saved", vim.log.levels.WARN)
+				return
+			end
 
 			if prev_bufnr == buffer.bufnr then
 				local fallback_buffer = get_buffers()[1]
+				if fallback_buffer.bufnr == buffer.bufnr then
+					fallback_buffer = nil
+				end
 				if not fallback_buffer then
 					M._close(bufnr, winnr)
 				end
@@ -280,6 +275,20 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 					fallback_buffer and fallback_buffer.bufnr or vim.api.nvim_create_buf(false, true)
 				)
 			end
+			vim.api.nvim_buf_delete(buffer.bufnr, { force = true })
+
+			if M._is_open() then
+				vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
+				local cursor = vim.api.nvim_win_get_cursor(0)
+				vim.api.nvim_buf_set_lines(bufnr, cursor[1] - 1, cursor[1], false, {})
+				vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
+			end
+
+			set_buffers(vim.iter(get_buffers())
+				:filter(function(b)
+					return b.bufnr ~= buffer.bufnr
+				end)
+				:totable())
 		end,
 	})
 end
