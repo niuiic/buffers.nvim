@@ -3,6 +3,7 @@ local M = {
 	_hl_groups = {},
 	_count = 0,
 	_ns_id = vim.api.nvim_create_namespace("buffers"),
+	_scores = {},
 }
 
 -- % setup %
@@ -37,7 +38,7 @@ function M.open()
 
 	M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_buffers)
 
-	M._write_buffers(bufnr, buffers, prev_bufnr)
+	M._write_buffers(bufnr, buffers)
 
 	M._focus_on_current_buffer(prev_bufnr, buffers, winnr)
 end
@@ -47,7 +48,7 @@ function M._get_buffers()
 	local bufnr_list = vim.api.nvim_list_bufs()
 	local dir = vim.fn.getcwd()
 
-	return vim.iter(bufnr_list)
+	local buffers = vim.iter(bufnr_list)
 		:filter(function(bufnr)
 			return M._config:get().enable(bufnr)
 		end)
@@ -68,9 +69,16 @@ function M._get_buffers()
 				path = relative_path,
 				type = type,
 				diagnostics = diagnostics,
+				score = M._scores[relative_path] or 0,
 			}
 		end)
 		:totable()
+
+	table.sort(buffers, function(a, b)
+		return a.score > b.score
+	end)
+
+	return buffers
 end
 
 -- % get_buffer_diagnostics %
@@ -135,7 +143,7 @@ function M._get_window_options(width, height)
 end
 
 -- % write_buffers %
-function M._write_buffers(bufnr, buffers, prev_bufnr)
+function M._write_buffers(bufnr, buffers)
 	vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
 
 	local active_buffers = {}
@@ -256,7 +264,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 
 			M._close(bufnr, winnr)
 			vim.api.nvim_set_current_win(prev_winnr)
-			vim.api.nvim_win_set_buf(prev_winnr, buffer.bufnr)
+			M._navigate_to_buffer(prev_winnr, buffer)
 		end,
 	})
 
@@ -315,7 +323,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 					return b.path == choice
 				end)
 
-				vim.api.nvim_win_set_buf(prev_winnr, buffer.bufnr)
+				M._navigate_to_buffer(prev_winnr, buffer)
 				M._close(bufnr, winnr)
 			end)
 		end,
@@ -352,5 +360,25 @@ function M._is_open()
 		return vim.api.nvim_get_option_value("filetype", { buf = bufnr }) == "buffers"
 	end)
 end
+
+-- % navigate_to_buffer %
+function M._navigate_to_buffer(prev_winnr, buffer)
+	vim.api.nvim_win_set_buf(prev_winnr, buffer.bufnr)
+
+	M._scores[buffer.path] = (M._scores[buffer.path] or 0) + 1
+end
+
+-- % reduce_scores %
+function M._reduce_scores()
+	vim.fn.timer_start(1000 * 60 * 5, function()
+		for key, value in pairs(M._scores) do
+			M._scores[key] = value - 1 > 0 and value - 1 or 0
+		end
+
+		M._reduce_scores()
+	end)
+end
+
+M._reduce_scores()
 
 return M
