@@ -285,7 +285,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				if not fallback_buffer then
 					M._close(bufnr, winnr)
 				end
-				vim.api.nvim_win_set_buf(
+				M._navigate_to_bufferl(
 					prev_winnr,
 					fallback_buffer and fallback_buffer.bufnr or vim.api.nvim_create_buf(false, true)
 				)
