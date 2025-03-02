@@ -69,7 +69,7 @@ function M._get_buffers()
 				path = relative_path,
 				type = type,
 				diagnostics = diagnostics,
-				score = M._scores[relative_path] or 0,
+				score = M._scores[bufnr] or 0,
 			}
 		end)
 		:totable()
@@ -264,7 +264,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 
 			M._close(bufnr, winnr)
 			vim.api.nvim_set_current_win(prev_winnr)
-			M._navigate_to_buffer(prev_winnr, buffer)
+			M._navigate_to_buffer(prev_winnr, buffer.bufnr)
 		end,
 	})
 
@@ -323,7 +323,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 					return b.path == choice
 				end)
 
-				M._navigate_to_buffer(prev_winnr, buffer)
+				M._navigate_to_buffer(prev_winnr, buffer.bufnr)
 				M._close(bufnr, winnr)
 			end)
 		end,
@@ -362,10 +362,10 @@ function M._is_open()
 end
 
 -- % navigate_to_buffer %
-function M._navigate_to_buffer(prev_winnr, buffer)
-	vim.api.nvim_win_set_buf(prev_winnr, buffer.bufnr)
+function M._navigate_to_buffer(prev_winnr, bufnr)
+	vim.api.nvim_win_set_buf(prev_winnr, bufnr)
 
-	M._scores[buffer.path] = (M._scores[buffer.path] or 0) + 1
+	M._scores[bufnr] = (M._scores[bufnr] or 0) + 1
 end
 
 -- % reduce_scores %
