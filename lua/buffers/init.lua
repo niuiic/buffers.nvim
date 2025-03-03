@@ -26,21 +26,21 @@ function M.open()
 		return
 	end
 
-	local bufnr, winnr = M._create_window(buffers)
+	local lines, highlights = M._get_draw_options(buffers)
+
+	local bufnr, winnr = M._create_window(lines)
+
+	M._draw_window(bufnr, lines, highlights)
+
+	M._focus_on_current_buffer(prev_bufnr, buffers, winnr)
 
 	local get_buffers = function()
 		return buffers
 	end
-
 	local set_buffers = function(new_buffers)
 		buffers = new_buffers
 	end
-
 	M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_buffers)
-
-	M._write_buffers(bufnr, buffers)
-
-	M._focus_on_current_buffer(prev_bufnr, buffers, winnr)
 end
 
 -- % get_buffers %
@@ -111,9 +111,28 @@ function M._get_buffer_diagnostics(bufnr)
 end
 
 -- % create_window %
-function M._create_window(buffers)
+function M._create_window(lines)
+	local screen_w = vim.opt.columns:get()
+	local screen_h = vim.opt.lines:get() - vim.opt.cmdheight:get()
+
+	local width = 0
+	local height = 0
+	for _, line in ipairs(lines) do
+		local len = string.len(line)
+		if width < len then
+			width = len
+		end
+		height = height + math.ceil(len / screen_w)
+	end
+	if height > screen_h then
+		height = screen_h
+	end
+	if width > screen_w then
+		width = screen_w
+	end
+
 	local bufnr = vim.api.nvim_create_buf(false, true)
-	local winnr = vim.api.nvim_open_win(bufnr, true, M._get_window_options(M._config:get().window.width, #buffers))
+	local winnr = vim.api.nvim_open_win(bufnr, true, M._get_window_options(width, height))
 	vim.api.nvim_set_option_value("filetype", "buffers", { buf = bufnr })
 
 	return bufnr, winnr
@@ -142,10 +161,8 @@ function M._get_window_options(width, height)
 	}
 end
 
--- % write_buffers %
-function M._write_buffers(bufnr, buffers)
-	vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-
+-- % get_draw_options %
+function M._get_draw_options(buffers)
 	local active_buffers = {}
 	vim.iter(vim.api.nvim_list_wins()):each(function(winnr)
 		active_buffers[vim.api.nvim_win_get_buf(winnr)] = true
@@ -217,6 +234,14 @@ function M._write_buffers(bufnr, buffers)
 			return text
 		end)
 		:totable()
+
+	return lines, highlights
+	--
+end
+
+-- % draw_window %
+function M._draw_window(bufnr, lines, highlights)
+	vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
 
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 

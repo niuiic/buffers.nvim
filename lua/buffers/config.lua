@@ -30,9 +30,6 @@ local defaul_config = {
 		enter = { "<cr>" },
 		search = { "<C-f>" },
 	},
-	window = {
-		width = 60,
-	},
 }
 
 return Config:new(defaul_config)
