@@ -25,10 +25,10 @@ local defaul_config = {
 		return true
 	end,
 	keymap = {
-		close_buffer = "d",
-		quit = "q",
-		enter = "<cr>",
-		search = "<C-f>",
+		close_buffer = { "d" },
+		quit = { "q", "<esc>" },
+		enter = { "<cr>" },
+		search = { "<C-f>" },
 	},
 	window = {
 		width = 60,
