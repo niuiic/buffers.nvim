@@ -300,7 +300,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				local buffer = vim.iter(get_buffers()):find(function(buf)
 					return buf.key == key
 				end)
-				if not buffer then
+				if not buffer or not vim.api.nvim_buf_is_valid(buffer.bufnr) then
 					return
 				end
 
