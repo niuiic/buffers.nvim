@@ -78,6 +78,10 @@ function M._get_buffers()
 		return a.score > b.score
 	end)
 
+	vim.iter(ipairs(buffers)):each(function(index, buffer)
+		buffer.key = M._config:get().keymap.jump[index]
+	end)
+
 	return buffers
 end
 
@@ -174,6 +178,7 @@ function M._get_draw_options(buffers)
 		color = color or "#0066FF"
 
 		local parts = {
+			buffer.key or " ",
 			buffer.modified and "⬤" or " ",
 			" ",
 			icon,
@@ -191,6 +196,7 @@ function M._get_draw_options(buffers)
 		local text = vim.fn.join(parts, "")
 
 		local colors = {
+			"#ff0fe2",
 			"#FFFF00",
 			"#FFFFFF",
 			color,
@@ -288,10 +294,12 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 		})
 	end)
 
-	vim.iter(M._config:get().keymap.enter):each(function(key)
+	vim.iter(M._config:get().keymap.jump):each(function(key)
 		vim.api.nvim_buf_set_keymap(bufnr, "n", key, "", {
 			callback = function()
-				local buffer = M._get_selected_buffer(get_buffers())
+				local buffer = vim.iter(get_buffers()):find(function(buf)
+					return buf.key == key
+				end)
 				if not buffer then
 					return
 				end
