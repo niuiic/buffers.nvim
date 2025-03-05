@@ -78,8 +78,18 @@ function M._get_buffers()
 		return a.score > b.score
 	end)
 
+	local jump_keys = vim.iter(M._config:get().keymap.jump)
+		:filter(function(key)
+			return not vim.tbl_contains({
+				M._config:get().keymap.close_buffer,
+				M._config:get().keymap.quit,
+				M._config:get().keymap.search,
+			}, key)
+		end)
+		:totable()
+
 	vim.iter(ipairs(buffers)):each(function(index, buffer)
-		buffer.key = M._config:get().keymap.jump[index]
+		buffer.key = jump_keys[index]
 	end)
 
 	return buffers
@@ -286,21 +296,14 @@ end
 
 -- % bind_keymap %
 function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_buffers)
-	vim.iter(M._config:get().keymap.quit):each(function(key)
-		vim.api.nvim_buf_set_keymap(bufnr, "n", key, "", {
-			callback = function()
-				M._close(bufnr, winnr)
-			end,
-		})
-	end)
+	vim.iter(get_buffers()):each(function(buffer)
+		if not buffer.key then
+			return
+		end
 
-	vim.iter(M._config:get().keymap.jump):each(function(key)
-		vim.api.nvim_buf_set_keymap(bufnr, "n", key, "", {
+		vim.api.nvim_buf_set_keymap(bufnr, "n", buffer.key, "", {
 			callback = function()
-				local buffer = vim.iter(get_buffers()):find(function(buf)
-					return buf.key == key
-				end)
-				if not buffer or not vim.api.nvim_buf_is_valid(buffer.bufnr) then
+				if not vim.api.nvim_buf_is_valid(buffer.bufnr) then
 					return
 				end
 
@@ -311,70 +314,72 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 		})
 	end)
 
-	vim.iter(M._config:get().keymap.close_buffer):each(function(key)
-		vim.api.nvim_buf_set_keymap(bufnr, "n", key, "", {
-			callback = function()
-				local buffer = M._get_selected_buffer(get_buffers())
+	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.quit, "", {
+		callback = function()
+			M._close(bufnr, winnr)
+		end,
+	})
 
-				if buffer.modified then
-					vim.notify("buffer is modified but not saved", vim.log.levels.WARN)
+	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.close_buffer, "", {
+		callback = function()
+			local buffer = M._get_selected_buffer(get_buffers())
+
+			if buffer.modified then
+				vim.notify("buffer is modified but not saved", vim.log.levels.WARN)
+				return
+			end
+
+			if prev_bufnr == buffer.bufnr then
+				local fallback_buffer = get_buffers()[1]
+				if fallback_buffer.bufnr == buffer.bufnr then
+					fallback_buffer = nil
+				end
+				if not fallback_buffer then
+					M._close(bufnr, winnr)
+				end
+				M._navigate_to_buffer(
+					prev_winnr,
+					fallback_buffer and fallback_buffer.bufnr or vim.api.nvim_create_buf(false, true)
+				)
+			end
+			vim.api.nvim_buf_delete(buffer.bufnr, { force = true })
+
+			if M._is_open() then
+				vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
+				local cursor = vim.api.nvim_win_get_cursor(0)
+				vim.api.nvim_buf_set_lines(bufnr, cursor[1] - 1, cursor[1], false, {})
+				vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
+			end
+
+			set_buffers(vim.iter(get_buffers())
+				:filter(function(b)
+					return b.bufnr ~= buffer.bufnr
+				end)
+				:totable())
+		end,
+	})
+
+	vim.api.nvim_buf_set_keymap(bufnr, "n", M._config:get().keymap.search, "", {
+		callback = function()
+			local items = vim.iter(get_buffers())
+				:map(function(buffer)
+					return buffer.path
+				end)
+				:totable()
+			vim.ui.select(items, {}, function(choice)
+				if not choice then
 					return
 				end
 
-				if prev_bufnr == buffer.bufnr then
-					local fallback_buffer = get_buffers()[1]
-					if fallback_buffer.bufnr == buffer.bufnr then
-						fallback_buffer = nil
-					end
-					if not fallback_buffer then
-						M._close(bufnr, winnr)
-					end
-					M._navigate_to_buffer(
-						prev_winnr,
-						fallback_buffer and fallback_buffer.bufnr or vim.api.nvim_create_buf(false, true)
-					)
-				end
-				vim.api.nvim_buf_delete(buffer.bufnr, { force = true })
-
-				if M._is_open() then
-					vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-					local cursor = vim.api.nvim_win_get_cursor(0)
-					vim.api.nvim_buf_set_lines(bufnr, cursor[1] - 1, cursor[1], false, {})
-					vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
-				end
-
-				set_buffers(vim.iter(get_buffers())
-					:filter(function(b)
-						return b.bufnr ~= buffer.bufnr
-					end)
-					:totable())
-			end,
-		})
-	end)
-
-	vim.iter(M._config:get().keymap.search):each(function(key)
-		vim.api.nvim_buf_set_keymap(bufnr, "n", key, "", {
-			callback = function()
-				local items = vim.iter(get_buffers())
-					:map(function(buffer)
-						return buffer.path
-					end)
-					:totable()
-				vim.ui.select(items, {}, function(choice)
-					if not choice then
-						return
-					end
-
-					local buffer = vim.iter(get_buffers()):find(function(b)
-						return b.path == choice
-					end)
-
-					M._navigate_to_buffer(prev_winnr, buffer.bufnr)
-					M._close(bufnr, winnr)
+				local buffer = vim.iter(get_buffers()):find(function(b)
+					return b.path == choice
 				end)
-			end,
-		})
-	end)
+
+				M._navigate_to_buffer(prev_winnr, buffer.bufnr)
+				M._close(bufnr, winnr)
+			end)
+		end,
+	})
 end
 
 -- % get_selected_buffer %

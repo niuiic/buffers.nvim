@@ -25,12 +25,13 @@ local defaul_config = {
 		return true
 	end,
 	keymap = {
-		close_buffer = { "d" },
-		quit = { "q", "<esc>" },
+		close_buffer = "d",
+		quit = "<esc>",
 		jump = {
 			"a",
 			"b",
 			"c",
+			"d",
 			"e",
 			"f",
 			"g",
@@ -41,6 +42,7 @@ local defaul_config = {
 			"n",
 			"o",
 			"p",
+			"q",
 			"r",
 			"s",
 			"t",
@@ -56,6 +58,7 @@ local defaul_config = {
 			"D",
 			"E",
 			"F",
+			"G",
 			"H",
 			"I",
 			"J",
@@ -76,7 +79,7 @@ local defaul_config = {
 			"Y",
 			"Z",
 		},
-		search = { "<C-f>" },
+		search = "<C-f>",
 	},
 }
 
