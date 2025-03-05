@@ -362,7 +362,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				end)
 				:totable())
 
-			if #get_buffers() > 0 then
+			if #get_buffers() > 1 then
 				local lines, highlights = M._get_draw_options(get_buffers())
 
 				M._draw_window(bufnr, lines, highlights)
