@@ -4,7 +4,14 @@ local M = {
 	_count = 0,
 	_ns_id = vim.api.nvim_create_namespace("buffers"),
 	_scores = {},
+	_old_buffers = {},
 }
+
+vim.api.nvim_create_autocmd("BufAdd", {
+	callback = function(args)
+		M._old_buffers[args.buf] = true
+	end,
+})
 
 -- % setup %
 function M.setup(new_config)
@@ -55,7 +62,7 @@ function M._get_buffers()
 
 	local buffers = vim.iter(bufnr_list)
 		:filter(function(bufnr)
-			return M._config:get().enable(bufnr)
+			return M._old_buffers[bufnr] and M._config:get().enable(bufnr)
 		end)
 		:map(function(bufnr)
 			local modified = vim.api.nvim_get_option_value("modified", { buf = bufnr })
