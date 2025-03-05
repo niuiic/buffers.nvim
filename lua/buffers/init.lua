@@ -344,7 +344,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 					return buffer.bufnr == vim.api.nvim_win_get_buf(win)
 				end)
 				local fallback_buffer = vim.iter(get_buffers()):find(function(buf)
-					return buf.bufnr ~= buffer.bufnr and not buf.is_active
+					return not buf.is_active
 				end)
 				if fallback_buffer then
 					fallback_buffer.is_active = true
