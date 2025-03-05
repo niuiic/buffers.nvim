@@ -196,12 +196,13 @@ function M._get_draw_options(buffers)
 		color = color or "#0066FF"
 
 		local parts = {
-			buffer.key or " ",
 			buffer.modified and "⬤" or " ",
 			" ",
 			icon,
 			" ",
 			buffer.path,
+			" ",
+			buffer.key or " ",
 			" ",
 			buffer.diagnostics.error > 0 and buffer.diagnostics.error .. "" or "",
 			buffer.diagnostics.error > 0 and " " or "",
@@ -214,12 +215,13 @@ function M._get_draw_options(buffers)
 		local text = vim.fn.join(parts, "")
 
 		local colors = {
-			"#ff0fe2",
 			"#FFFF00",
 			"#FFFFFF",
 			color,
 			"#FFFFFF",
 			buffer.is_active and "#00FFFF" or "#808080",
+			"#FFFFFF",
+			"#ff0fe2",
 			"#FFFFFF",
 			"#FF0000",
 			"#FFFFFF",
