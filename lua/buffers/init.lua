@@ -48,6 +48,11 @@ function M._get_buffers()
 	local bufnr_list = vim.api.nvim_list_bufs()
 	local dir = vim.fn.getcwd()
 
+	local active_buffers = {}
+	vim.iter(vim.api.nvim_list_wins()):each(function(winnr)
+		active_buffers[vim.api.nvim_win_get_buf(winnr)] = true
+	end)
+
 	local buffers = vim.iter(bufnr_list)
 		:filter(function(bufnr)
 			return M._config:get().enable(bufnr)
@@ -70,6 +75,7 @@ function M._get_buffers()
 				type = type,
 				diagnostics = diagnostics,
 				score = M._scores[bufnr] or 0,
+				is_active = active_buffers[bufnr],
 			}
 		end)
 		:totable()
@@ -177,11 +183,6 @@ end
 
 -- % get_draw_options %
 function M._get_draw_options(buffers)
-	local active_buffers = {}
-	vim.iter(vim.api.nvim_list_wins()):each(function(winnr)
-		active_buffers[vim.api.nvim_win_get_buf(winnr)] = true
-	end)
-
 	local function get_line(buffer, index)
 		local icon, color = require("nvim-web-devicons").get_icon_color_by_filetype(buffer.type)
 		icon = icon or ""
@@ -211,7 +212,7 @@ function M._get_draw_options(buffers)
 			"#FFFFFF",
 			color,
 			"#FFFFFF",
-			active_buffers[buffer.bufnr] and "#00FFFF" or "#808080",
+			buffer.is_active and "#00FFFF" or "#808080",
 			"#FFFFFF",
 			"#FF0000",
 			"#FFFFFF",
@@ -252,7 +253,6 @@ function M._get_draw_options(buffers)
 		:totable()
 
 	return lines, highlights
-	--
 end
 
 -- % draw_window %
@@ -329,33 +329,37 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				return
 			end
 
-			if prev_bufnr == buffer.bufnr then
-				local fallback_buffer = get_buffers()[1]
-				if fallback_buffer.bufnr == buffer.bufnr then
-					fallback_buffer = nil
-				end
-				if not fallback_buffer then
-					M._close(bufnr, winnr)
+			if buffer.is_active then
+				local buf_winnr = vim.iter(vim.api.nvim_list_wins()):find(function(win)
+					return buffer.bufnr == vim.api.nvim_win_get_buf(win)
+				end)
+				local fallback_buffer = vim.iter(get_buffers()):find(function(buf)
+					return buf.bufnr ~= buffer.bufnr and not buf.is_active
+				end)
+				if fallback_buffer then
+					fallback_buffer.is_active = true
 				end
 				M._navigate_to_buffer(
-					prev_winnr,
+					buf_winnr,
 					fallback_buffer and fallback_buffer.bufnr or vim.api.nvim_create_buf(false, true)
 				)
 			end
 			vim.api.nvim_buf_delete(buffer.bufnr, { force = true })
-
-			if M._is_open() then
-				vim.api.nvim_set_option_value("modifiable", true, { buf = bufnr })
-				local cursor = vim.api.nvim_win_get_cursor(0)
-				vim.api.nvim_buf_set_lines(bufnr, cursor[1] - 1, cursor[1], false, {})
-				vim.api.nvim_set_option_value("modifiable", false, { buf = bufnr })
-			end
-
 			set_buffers(vim.iter(get_buffers())
 				:filter(function(b)
 					return b.bufnr ~= buffer.bufnr
 				end)
 				:totable())
+
+			if #get_buffers() > 0 then
+				local lines, highlights = M._get_draw_options(get_buffers())
+
+				M._draw_window(bufnr, lines, highlights)
+
+				M._focus_on_current_buffer(prev_bufnr, get_buffers(), winnr)
+			else
+				M._close(bufnr, winnr)
+			end
 		end,
 	})
 
