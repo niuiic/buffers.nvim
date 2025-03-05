@@ -4,12 +4,13 @@ local M = {
 	_count = 0,
 	_ns_id = vim.api.nvim_create_namespace("buffers"),
 	_scores = {},
-	_old_buffers = {},
+	_history_buffers = {},
+	_delete_buffers = {},
 }
 
 vim.api.nvim_create_autocmd("BufAdd", {
 	callback = function(args)
-		M._old_buffers[args.buf] = true
+		M._history_buffers[args.buf] = true
 	end,
 })
 
@@ -62,7 +63,7 @@ function M._get_buffers()
 
 	local buffers = vim.iter(bufnr_list)
 		:filter(function(bufnr)
-			return M._old_buffers[bufnr] and M._config:get().enable(bufnr)
+			return M._history_buffers[bufnr] and not M._delete_buffers[bufnr] and M._config:get().enable(bufnr)
 		end)
 		:map(function(bufnr)
 			local modified = vim.api.nvim_get_option_value("modified", { buf = bufnr })
@@ -354,6 +355,7 @@ function M._bind_keymap(bufnr, winnr, prev_winnr, prev_bufnr, get_buffers, set_b
 				)
 			end
 			vim.api.nvim_buf_delete(buffer.bufnr, { force = true })
+			M._delete_buffers[buffer.bufnr] = true
 			set_buffers(vim.iter(get_buffers())
 				:filter(function(b)
 					return b.bufnr ~= buffer.bufnr
