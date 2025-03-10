@@ -87,7 +87,7 @@ function M._get_buffers()
 		:totable()
 
 	table.sort(buffers, function(a, b)
-		return a.path > b.path
+		return a.path < b.path
 	end)
 
 	local jump_keys = vim.iter(M._config:get().keymap.jump)
