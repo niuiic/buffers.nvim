@@ -3,7 +3,6 @@ local M = {
 	_hl_groups = {},
 	_count = 0,
 	_ns_id = vim.api.nvim_create_namespace("buffers"),
-	_scores = {},
 	_history_buffers = {},
 	_delete_buffers = {},
 }
@@ -82,14 +81,13 @@ function M._get_buffers()
 				path = relative_path,
 				type = type,
 				diagnostics = diagnostics,
-				score = M._scores[bufnr] or 0,
 				is_active = active_buffers[bufnr],
 			}
 		end)
 		:totable()
 
 	table.sort(buffers, function(a, b)
-		return a.score > b.score
+		return a.path > b.path
 	end)
 
 	local jump_keys = vim.iter(M._config:get().keymap.jump)
@@ -431,21 +429,6 @@ end
 -- % navigate_to_buffer %
 function M._navigate_to_buffer(prev_winnr, bufnr)
 	vim.api.nvim_win_set_buf(prev_winnr, bufnr)
-
-	M._scores[bufnr] = (M._scores[bufnr] or 0) + 1
 end
-
--- % reduce_scores %
-function M._reduce_scores()
-	vim.fn.timer_start(1000 * 60 * 5, function()
-		for key, value in pairs(M._scores) do
-			M._scores[key] = value - 1 > 0 and value - 1 or 0
-		end
-
-		M._reduce_scores()
-	end)
-end
-
-M._reduce_scores()
 
 return M
